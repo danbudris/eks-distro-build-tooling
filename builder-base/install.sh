@@ -39,7 +39,7 @@ if [[ "$CI" == "true" ]]; then
 fi
 
 IS_AL22=false
-if [ -f /etc/yum.repos.d/amazonlinux.repo ] && grep -q "2022" /etc/yum.repos.d/amazonlinux.repo; then 
+if [ -f /etc/yum.repos.d/amazonlinux.repo ] && grep -q "2022" /etc/yum.repos.d/amazonlinux.repo; then
     IS_AL22=true
 fi
 
@@ -64,12 +64,12 @@ function build::go::install(){
 
     # AL2 provides a longer supported version of golang, use AL2 package when possible
     local yum_provided_versions="1.16 1.13"
-    if [ "$IS_AL22" = true ]; then 
+    if [ "$IS_AL22" = true ]; then
         # al22 only includes 1.16
         # TODO: do we want to install 1.15 and 1.13 from al2?
         yum_provided_versions="1.16"
     fi
-    
+
     if [[ $yum_provided_versions =~ (^|[[:space:]])${version%.*}($|[[:space:]]) ]]; then
         # Do not install rpm directly instead follow eks-distro base images pattern
         # of downloading and install rpms directly
@@ -80,15 +80,15 @@ function build::go::install(){
                 yumdownloader --destdir=/tmp -x "*.i686" $package-$al2_package_version
             fi
         done
-        
+
         mkdir -p /tmp/go-extracted
         for rpm in /tmp/golang-*.rpm; do $(cd /tmp/go-extracted && rpm2cpio $rpm | cpio -idmv); done
-        
+
         local -r golang_version=$(/tmp/go-extracted/usr/lib/golang/bin/go version | grep -o "go[0-9].* " | xargs)
-        
+
         mkdir -p /root/sdk/$golang_version
         mv /tmp/go-extracted/usr/lib/golang/* /root/sdk/$golang_version
-        
+
         if [ "$IS_AL22" = true ]; then
             mv /tmp/go-extracted/usr/share/licenses/golang/* /root/sdk/$golang_version
         else
@@ -97,7 +97,7 @@ function build::go::install(){
 
         version=$(echo "$golang_version" | grep -o "[0-9].*")
         ln -s /root/sdk/go${version}/bin/go ${GOPATH}/bin/$golang_version
-        
+
         rm -rf /tmp/go-extracted /tmp/golang-*.rpm
     else
         go install golang.org/dl/go${version}@latest
@@ -110,7 +110,7 @@ function build::go::install(){
 function build::cleanup(){
     yum clean all
     rm -rf /var/cache/{amzn2extras,yum,ldconfig}
-    
+
     # truncate logs
     find /var/log -type f | while read file; do echo -ne '' > $file; done
 
@@ -126,7 +126,7 @@ function build::cleanup(){
     # go get leaves the tar around
     find /root/sdk -type f -name 'go*.tar.gz' -delete
     go clean --modcache
-    
+
     # pip cache
     rm -rf /root/.cache
 
@@ -174,9 +174,9 @@ build::go::symlink ${GOLANG_VERSION}
 
 rm go${GOLANG_VERSION}.linux-$TARGETARCH.tar.gz
 
-if [ $TARGETARCH == 'amd64' ]; then 
+if [ $TARGETARCH == 'amd64' ]; then
     ARCH='x86_64'
-else 
+else
     ARCH='aarch64'
 fi
 
@@ -214,7 +214,7 @@ fi
 # The base image is the kind-minimal image with a /etc/passwd file
 # based from the minimal base, which is setup manually.  The root
 # user's shell is configured as /sbin/nologin
-# This doesnt work for the builder-base usage in Codebuild which runs 
+# This doesnt work for the builder-base usage in Codebuild which runs
 # certain commands specifically as root.  We need the shell to be bash.
 usermod --shell /bin/bash root
 
@@ -240,6 +240,7 @@ yum install -y \
     pkgconfig \
     procps-ng \
     python3-pip \
+    rpmbuild \
     rsync \
     vim \
     which \
@@ -300,8 +301,8 @@ rm -rf packer_${PACKER_VERSION}_linux_$TARGETARCH.zip
 # with GOROOT pointed to /root/sdk/go... instead of /usr/local/go so it
 # is able to properly packages from the standard Go library
 # We currently  use 1.17 or 1.16, so installing for both
-GO111MODULE=on GOBIN=${GOPATH}/go1.18/bin ${GOPATH}/go1.18/bin/go install github.com/google/go-licenses@v1.2.1 
-GO111MODULE=on GOBIN=${GOPATH}/go1.17/bin ${GOPATH}/go1.17/bin/go install github.com/google/go-licenses@v1.2.1 
+GO111MODULE=on GOBIN=${GOPATH}/go1.18/bin ${GOPATH}/go1.18/bin/go install github.com/google/go-licenses@v1.2.1
+GO111MODULE=on GOBIN=${GOPATH}/go1.17/bin ${GOPATH}/go1.17/bin/go install github.com/google/go-licenses@v1.2.1
 GO111MODULE=on GOBIN=${GOPATH}/go1.16/bin ${GOPATH}/go1.16/bin/go get github.com/google/go-licenses@v1.2.1
 # 1.16 is the default so symlink it to /go/bin
 ln -s ${GOPATH}/go1.16/bin/go-licenses ${GOPATH}/bin
