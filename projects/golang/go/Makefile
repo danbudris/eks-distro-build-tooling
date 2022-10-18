@@ -10,11 +10,17 @@ GO_REPO_URL?="https://github.com/golang/go.git"
 GITHUB_EMAIL?="prow@amazonaws.com"
 GITHUB_USER?="Prow Bot"
 
+AMD64="linux/amd64"
+ARM64="linux/arm64"
+PLATFORM?=$(AMD64)
+
+MAKE_TARGET?=build
+
 .PHONY: build
-build: check-env setup-rpm-tree fetch-golang-source-archive copy-sources-to-rpmbuild-tree copy-patches-to-rpmbuild-tree build-golang-rpm sync-artifacts-to-s3-dry-run
+build: check-env build-in-docker sync-artifacts-to-s3-dry-run
 
 .PHONY: release
-release: build sync-artifacts-to-s3
+release: set-release-env build sync-artifacts-to-s3
 
 .PHONY: fetch-golang-source-archive
 fetch-golang-source-archive:
@@ -72,14 +78,29 @@ ifndef ARTIFACTS_BUCKET
 $(error environment variable ARTIFACTS_BUCKET is undefined)
 endif
 
-.PHONY: check-env-release
-check-env-release:
-ifndef ARTIFACTS_BUCKET
-$(error environment variable ARTIFACTS_BUCKET is undefined)
-endif
-
 .PHONY: check-env
 check-env:
 ifndef GO_SOURCE_VERSION
 $(error environment variable GO_SOURCE_VERSION, e.g. 1.15, is undefined)
 endif
+
+.PHONY: set-release-env
+set-release-env:
+PLATFORM=$(AMD64),$(ARM64)
+MAKE_TARGET=release
+
+.PHONY: build-in-docker
+build-in-docker:
+	buildctl \
+		build \
+		--frontend dockerfile.v0 \
+		--opt filename=Dockerfile \
+		--opt platform=$(PLATFORM) \
+		--opt build-arg:ARTIFACTS_BUCKET=$(ARTIFACTS_BUCKET) \
+		--opt build-arg:GO_SOURCE_VERSION=$(GO_SOURCE_VERSION) \
+		--opt build-arg:BUILD_ROOT=$(VERSION_DIRECTORY) \
+		--opt build-arg:MAKE_TARGET=$(MAKE_TARGET)
+		--progress plain \
+		--local dockerfile=./ \
+		--local context=. \
+		--output type=local,dest=./
