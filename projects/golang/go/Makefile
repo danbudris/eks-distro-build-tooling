@@ -12,10 +12,8 @@ GITHUB_EMAIL?="prow@amazonaws.com"
 GITHUB_USER?="Prow Bot"
 
 ARCHITECTURE?="AMD64"
-ifeq (${ARCHITECTURE},AMD64)
-	RPM_ARCH=x86_64
-endif
-ifeq (${ARCHITECTURE},ARM64)
+RPM_ARCH?=x86_64
+ifeq ($(ARCHITECTURE), ARM64)
 	RPM_ARCH=aarch64
 endif
 
