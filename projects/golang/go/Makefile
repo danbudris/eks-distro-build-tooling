@@ -70,6 +70,10 @@ sync-artifacts-to-s3: check-env-release
 	source $(BASE_DIRECTORY)/scripts/sync_to_s3.sh && sync_artifacts_to_s3 $(ARTIFACTS_BUCKET) $(VERSION_DIRECTORY)/rpmbuild/$(RPM_ARCH) $(ARCH_RPM_OUT_PATH) true false
 	source $(BASE_DIRECTORY)/scripts/sync_to_s3.sh && sync_artifacts_to_s3 $(ARTIFACTS_BUCKET) $(VERSION_DIRECTORY)/rpmbuild/noarch $(NOARCH_RPM_OUT_PATH) true false
 
+.PHONY: prow-release
+prow-release: check-env-release
+	$(PROJECT_DIRECTORY)/scripts/prow-release.sh
+
 .PHONY: setup-prod-release-s3-credentials
 setup-prod-release-s3-credentials:
 	$(PROJECT_DIRECTORY)/scripts/release_s3_configuration.sh
