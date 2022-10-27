@@ -24,6 +24,7 @@ type GenerateConformanceTestsProwJobsOptions struct {
 	RebuildAll                  bool
 	PreExecuteCommands          []string
 	PostExecuteCommands         []string
+	JobIdentifier               string
 }
 
 func (g GenerateConformanceTestsProwJobsOptions) setDefaults() {
@@ -72,7 +73,10 @@ func (g GenerateConformanceTestsProwJobsOptions) setDefaults() {
 	}
 }
 
-func GenerateConformanceTestProwJob(eksDistroVersion string, opts GenerateConformanceTestsProwJobsOptions) []byte {
+//kubernetesVersion
+//
+
+func GenerateConformanceTestProwJobs(eksDistroVersion string, opts GenerateConformanceTestsProwJobsOptions) ([]byte, []byte) {
 	opts.setDefaults()
 
 	job := prowJobTypes.JobConfig{}
