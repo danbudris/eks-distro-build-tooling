@@ -2,17 +2,17 @@ apiVersion: prow.k8s.io/v1
 kind: ProwJob
 metadata:
   annotations:
-    prow.k8s.io/context: build-{{.kuberenetsVersion}}-postsubmit
-    prow.k8s.io/job: build-{{.kuberenetsVersion}}-postsubmit
+    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit
+    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit
   creationTimestamp: null
   labels:
     created-by-prow: "true"
     event-GUID: 36c0695c-5577-11ed-8cfd-97590dc329f3
     image-build: "true"
     prow.k8s.io/build-id: "1585386640363229184"
-    prow.k8s.io/context: build-{{.kuberenetsVersion}}-postsubmit
+    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit
     prow.k8s.io/id: 3804dff7-5577-11ed-b396-22bcd61f53ac
-    prow.k8s.io/job: build-{{.kuberenetsVersion}}-postsubmit
+    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit
     prow.k8s.io/refs.base_ref: main
     prow.k8s.io/refs.org: aws
     prow.k8s.io/refs.repo: eks-distro
@@ -21,7 +21,7 @@ metadata:
 spec:
   agent: kubernetes
   cluster: prow-postsubmits-cluster
-  context: build-{{.kuberenetsVersion}}-postsubmit
+  context: build-{{ .kubernetesVersion }}-postsubmit
   decoration_config:
     gcs_configuration:
       bucket: s3://prowdataclusterstack-316434458-prowbucket7c73355c-1n9f9v93wpjcm
@@ -34,7 +34,7 @@ spec:
       initupload: public.ecr.aws/eks-distro-build-tooling/prow-initupload:v20220727-a57f8abeb4
       sidecar: public.ecr.aws/eks-distro-build-tooling/prow-sidecar:v20220727-a57f8abeb4
   error_on_eviction: true
-  job: build-{{.kuberenetsVersion}}-postsubmit
+  job: build-{{ .kubernetesVersion }}-postsubmit
   max_concurrency: 10
   namespace: default
   pod_spec:
@@ -51,7 +51,7 @@ spec:
           - name: ARTIFACT_BUCKET
             value: {{ .artifactsBucket }}
           - name: RELEASE_BRANCH
-            value: {{ .kuberenetsVersion }}
+            value: {{  .kubernetesVersion  }}
           - name: CONTROL_PLANE_INSTANCE_PROFILE
             value: {{ .controlPlaneInstanceProfile }}
           - name: NODE_INSTANCE_PROFILE
