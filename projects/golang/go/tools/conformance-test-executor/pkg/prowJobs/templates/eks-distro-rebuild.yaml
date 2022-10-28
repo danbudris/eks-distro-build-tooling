@@ -2,39 +2,38 @@ apiVersion: prow.k8s.io/v1
 kind: ProwJob
 metadata:
   annotations:
-    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit
-    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit
+    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit-custom
+    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit-custom
   creationTimestamp: null
   labels:
     created-by-prow: "true"
-    event-GUID: 36c0695c-5577-11ed-8cfd-97590dc329f3
     image-build: "true"
-    prow.k8s.io/build-id: "1585386640363229184"
-    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit
-    prow.k8s.io/id: 3804dff7-5577-11ed-b396-22bcd61f53ac
-    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit
+    prow.k8s.io/build-id: "100"
+    prow.k8s.io/context: build-{{ .kubernetesVersion }}-postsubmit-custom
+    prow.k8s.io/id: {{ .jobId }}
+    prow.k8s.io/job: build-{{ .kubernetesVersion }}-postsubmit-custom
     prow.k8s.io/refs.base_ref: main
-    prow.k8s.io/refs.org: aws
-    prow.k8s.io/refs.repo: eks-distro
+    prow.k8s.io/refs.org: {{ .gitOrg }}
+    prow.k8s.io/refs.repo: {{ .gitRepo }}
     prow.k8s.io/type: postsubmit
-  name: {{ .jobName }}
+  name: {{ .jobId }}
 spec:
   agent: kubernetes
   cluster: prow-postsubmits-cluster
-  context: build-{{ .kubernetesVersion }}-postsubmit
+  context: build-{{ .kubernetesVersion }}-postsubmit-custom
   decoration_config:
     gcs_configuration:
       bucket: s3://prowdataclusterstack-316434458-prowbucket7c73355c-1n9f9v93wpjcm
       path_strategy: explicit
     s3_credentials_secret: s3-credentials
-    timeout: 6h0m0s
+    timeout: {{ .timeout }}
     utility_images:
       clonerefs: public.ecr.aws/eks-distro-build-tooling/prow-clonerefs:v20220727-a57f8abeb4
       entrypoint: public.ecr.aws/eks-distro-build-tooling/prow-entrypoint:v20220727-a57f8abeb4
       initupload: public.ecr.aws/eks-distro-build-tooling/prow-initupload:v20220727-a57f8abeb4
       sidecar: public.ecr.aws/eks-distro-build-tooling/prow-sidecar:v20220727-a57f8abeb4
   error_on_eviction: true
-  job: build-{{ .kubernetesVersion }}-postsubmit
+  job: build-{{ .kubernetesVersion }}-postsubmit-custom
   max_concurrency: 10
   namespace: default
   pod_spec:
@@ -70,7 +69,7 @@ spec:
                 fieldPath: metadata.name
           - name: GOPROXY
             value: http://athens-proxy.default.svc.cluster.local
-        image: public.ecr.aws/eks-distro-build-tooling/builder-base:9242630ce031e03158c65753c07bbfc79985347e.2
+        image: {{ .runtimeImage }}
         name: build-container
         resources:
           requests:
@@ -123,7 +122,7 @@ spec:
           - mountPath: /config
             name: builder-base-tag-file
     nodeSelector:
-      arch: AMD64
+      arch: {{ .architecture }}
     serviceAccountName: postsubmits-build-account
     volumes:
       - configMap:
@@ -151,12 +150,12 @@ spec:
   prowjob_defaults:
     tenant_id: GlobalDefaultID
   refs:
-    base_link: https://github.com/aws/eks-distro/compare/36f6355201f6...5e5bbfc56809
+    base_link: https://github.com/aws/eks-distro/compare/{{ .headSha }}...{{ .baseSha }}
     base_ref: main
-    base_sha: 5e5bbfc56809daec14982b258412a589e97f82a8
-    org: aws
-    repo: eks-distro
-    repo_link: https://github.com/aws/eks-distro
+    base_sha: {{ .baseSha }}
+    org: {{ .gitOrg }}
+    repo: {{ .gitRepo }}
+    repo_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}
   report: true
   type: postsubmit
 status:

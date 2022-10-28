@@ -1,45 +1,73 @@
 package prowJobs
 
-import "time"
+import (
+	"time"
 
-const defaultTimeout = "6h"
-const defaultMemoryRequest = "8Gi"
-const defaultCpuRequest = "2"
+	"github.com/google/uuid"
 
-type ProwJobOptions struct {
+	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/constants"
+)
+
+const (
+	defaultCpuRequest = "2"
+	defaultGitOrg = "aws"
+	defaultMemoryRequest = "8Gi"
+	defaultTimeout = "6h0m0s"
+)
+
+
+type ProwJobCommonOptions struct {
+	Architecture                string
+	CpuRequest                  string
+	GitOrg                      string
+	JobIdentifier               string
+	MemoryRequest               string
 	RuntimeImage                string
 	Timeout                     string
-	CpuRequest                  string
-	MemoryRequest               string
-	PreExecuteCommands          []string
-	PostExecuteCommands         []string
-	JobIdentifier               string
 }
 
-func (g *ProwJobOptions) setDefaults() {
-	if g.Timeout == "" {
-		g.Timeout = defaultTimeout
+func (g *ProwJobCommonOptions) setCommonDefaults() {
+	if g.Architecture == "" {
+		g.Architecture = constants.AMD64Arch
+	}
+
+	if g.CpuRequest == "" {
+		g.CpuRequest = defaultCpuRequest
+	}
+
+	if g.GitOrg == "" {
+		g.GitOrg = defaultGitOrg
+	}
+
+	if g.JobIdentifier == "" {
+		g.JobIdentifier = uuid.Must(uuid.NewRandom()).String()
 	}
 
 	if g.MemoryRequest == "" {
 		g.MemoryRequest = defaultMemoryRequest
 	}
 
-	if g.CpuRequest == "" {
-		g.CpuRequest = defaultCpuRequest
+	if g.Timeout == "" {
+		g.Timeout = defaultTimeout
+	}
+
+	if g.RuntimeImage == "" {
+		g.RuntimeImage = "public.ecr.aws/eks-distro-build-tooling/builder-base:9242630ce031e03158c65753c07bbfc79985347e.2"
 	}
 }
 
-func (g *ProwJobOptions) TemplateValues() map[string]interface{}{
+func (g *ProwJobCommonOptions) prowJobCommonTemplateValues() map[string]interface{}{
 	templateValues := make(map[string]interface{})
-	templateValues["timeout"] = g.Timeout
-	templateValues["memoryRequest"] = g.MemoryRequest
+	templateValues["architecture"] = g.Architecture
 	templateValues["cpuRequest"] = g.CpuRequest
-	templateValues["runtimeImage"] = g.RuntimeImage
+	templateValues["gitOrg"] = g.GitOrg
 	templateValues["jobId"] = g.JobIdentifier
+	templateValues["memoryRequest"] = g.MemoryRequest
+	templateValues["runtimeImage"] = g.RuntimeImage
+	templateValues["timeout"] = g.Timeout
 	return templateValues
 }
 
-func ProwJobStartTime() string {
-	return time.Now().Format("2006-01-02T15:04:05Z")
+func ProwJobStartTime(startTime time.Time) string {
+	return startTime.Format("2006-01-02T15:04:05Z")
 }

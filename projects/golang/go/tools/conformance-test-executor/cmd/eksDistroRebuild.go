@@ -27,12 +27,14 @@ var eksDistroRebuildCustomProwJob = &cobra.Command{
 }
 
 const (
-	K8sVersionFlag = "kubernetesVersion"
+	ArtifactsBucketFlag = "artifactsBucket"
+	K8sVersionFlag      = "kubernetesVersion"
 )
 
 func init() {
 	customProwJobCommand.AddCommand(eksDistroRebuildCustomProwJob)
 	eksDistroRebuildCustomProwJob.Flags().StringP(K8sVersionFlag, "v", "", "EKS D Kubernetes version to rebuild")
+	eksDistroRebuildCustomProwJob.Flags().StringP(ArtifactsBucketFlag, "b", "", "EKS-D artifacts bucket to use for generated artifacts")
 
 	requiredFlags := []string{
 		K8sVersionFlag,
@@ -56,9 +58,10 @@ func preRunEksDistroRebuild(cmd *cobra.Command, args []string) {
 
 func eksDistroRebuildProwJob(ctx context.Context) error {
 	eksDistroRebuildOpts := &prowJobs.EksDistroRebuildProwJobOptions{
-		ProwJobOptions: &prowJobs.ProwJobOptions{},
+		ProwJobCommonOptions: &prowJobs.ProwJobCommonOptions{},
 	}
 
+	artifactsBucket := viper.GetString(ArtifactsBucketFlag)
 	runtimeImage := viper.GetString(RuntimeImageFlag)
 	k8sVersion := viper.GetString(K8sVersionFlag)
 
@@ -66,7 +69,15 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 		eksDistroRebuildOpts.RuntimeImage = runtimeImage
 	}
 
-	jobBytes, err := prowJobs.NewEksDistroRebuildProwJob(k8sVersion, "testJob", eksDistroRebuildOpts)
+	if artifactsBucket != "" {
+		eksDistroRebuildOpts.ArtifactsBucket = artifactsBucket
+	}
+
+	headSha := "5e5bbfc56809daec14982b258412a589e97f82a8"
+	baseSha := "36f6355201f6c244eec34a7eafb6a5673928900b"
+	jobName := fmt.Sprintf("build-%s-postsubmit-custom", k8sVersion)
+
+	jobBytes, err := prowJobs.NewEksDistroRebuildProwJob(k8sVersion, jobName, headSha, baseSha, eksDistroRebuildOpts)
 	if err != nil {
 		return fmt.Errorf("building EKS Distro Rebuild Prow Job: %v", err)
 	}

@@ -11,7 +11,7 @@ import (
 const eksDistroRebuildTemplate = "templates/eks-distro-rebuild-and-test.yaml"
 
 type BuilderBaseBuildProwJobOptions struct {
-	*ProwJobOptions
+	*ProwJobCommonOptions
 	ArtifactDeploymentRoleArn   string
 	ArtifactsBucket             string
 	AwsRegion                   string
@@ -22,10 +22,10 @@ type BuilderBaseBuildProwJobOptions struct {
 }
 
 func (e BuilderBaseBuildProwJobOptions) setBuilderBaseBuildDefaults() {
-	if e.ProwJobOptions == nil {
-		e.ProwJobOptions = &ProwJobOptions{}
+	if e.ProwJobCommonOptions == nil {
+		e.ProwJobCommonOptions = &ProwJobCommonOptions{}
 	}
-	e.setDefaults()
+	e.setCommonDefaults()
 	if e.ArtifactDeploymentRoleArn == "" {
 		e.ArtifactDeploymentRoleArn = constants.ArtifactDeploymentRoleArn
 	}

@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"text/template"
+	"time"
 
 	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/constants"
 )
 
-const eksDRebuildProwJobTemplate = "pkg/prowJobs/templates/eks-distro-rebuild.yaml"
+const (
+	eksDRebuildProwJobTemplate = "pkg/prowJobs/templates/eks-distro-rebuild.yaml"
+	eksDRebuildDefaultGitRepo = "eks-distro"
+)
 
-func NewEksDistroRebuildProwJob(kubernetesVersion string, jobName string, opts *EksDistroRebuildProwJobOptions) ([]byte, error) {
+func NewEksDistroRebuildProwJob(kubernetesVersion string, jobName string, baseSha string, headSha string, opts *EksDistroRebuildProwJobOptions) ([]byte, error) {
 	if opts == nil {
 		opts = &EksDistroRebuildProwJobOptions{}
 	}
@@ -22,9 +26,12 @@ func NewEksDistroRebuildProwJob(kubernetesVersion string, jobName string, opts *
 	}
 
 	templateData := EksDistroRebuildTemplateValues(*opts)
-	templateData["startTime"] = ProwJobStartTime()
+	templateData["startTime"] = ProwJobStartTime(time.Now())
 	templateData["kubernetesVersion"] = kubernetesVersion
 	templateData["jobName"] = jobName
+	templateData["baseSha"] = baseSha
+	templateData["headSha"] = headSha
+	templateData["gitRepo"] = opts.GitRepo
 
 	var renderedTemplateData bytes.Buffer
 
@@ -46,7 +53,7 @@ func EksDistroRebuildTemplateValues(opts EksDistroRebuildProwJobOptions) map[str
 	templateValues["imageRepo"] = opts.ImageRepo
 	templateValues["dockerConfig"] = opts.DockerConfig
 
-	for k, v := range opts.TemplateValues() {
+	for k, v := range opts.prowJobCommonTemplateValues() {
 		templateValues[k] = v
 	}
 
@@ -54,22 +61,23 @@ func EksDistroRebuildTemplateValues(opts EksDistroRebuildProwJobOptions) map[str
 }
 
 type EksDistroRebuildProwJobOptions struct {
-	*ProwJobOptions
-	TestRoleArn                 string
+	*ProwJobCommonOptions
 	ArtifactsBucket             string
 	ControlPlaneInstanceProfile string
-	NodeInstanceProfile         string
-	KopsStateStore              string
-	ImageRepo                   string
 	DockerConfig                string
+	GitRepo                     string
+	ImageRepo                   string
+	KopsStateStore              string
+	NodeInstanceProfile         string
+	TestRoleArn                 string
 }
 
 func (b *EksDistroRebuildProwJobOptions) setEksDRebuildOptionsDefaults() {
-	if b.ProwJobOptions == nil {
-		b.ProwJobOptions = &ProwJobOptions{}
+	if b.ProwJobCommonOptions == nil {
+		b.ProwJobCommonOptions = &ProwJobCommonOptions{}
 	}
 
-	b.setDefaults()
+	b.setCommonDefaults()
 
 	if b.TestRoleArn == "" {
 		b.TestRoleArn = constants.TestRoleArn
@@ -81,6 +89,10 @@ func (b *EksDistroRebuildProwJobOptions) setEksDRebuildOptionsDefaults() {
 
 	if b.ControlPlaneInstanceProfile == "" {
 		b.ControlPlaneInstanceProfile = constants.ControlPlaneInstanceProfile
+	}
+
+	if b.GitRepo == "" {
+		b.GitRepo = eksDRebuildDefaultGitRepo
 	}
 
 	if b.NodeInstanceProfile == "" {
