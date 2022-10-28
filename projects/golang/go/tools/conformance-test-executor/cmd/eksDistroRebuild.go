@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/pflag"
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/prowJobs"
@@ -61,7 +61,6 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 
 	runtimeImage := viper.GetString(RuntimeImageFlag)
 	k8sVersion := viper.GetString(K8sVersionFlag)
-	fmt.Printf("\n\n K8s Version: %s \n\n", k8sVersion)
 
 	if runtimeImage != "" {
 		eksDistroRebuildOpts.RuntimeImage = runtimeImage
