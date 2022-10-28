@@ -15,18 +15,19 @@ func NewEksDistroRebuildProwJob(kubernetesVersion string, jobName string, opts *
 		opts = &EksDistroRebuildProwJobOptions{}
 	}
 	opts.setEksDRebuildOptionsDefaults()
-	templateData := EksDistroRebuildTemplateValues(*opts)
-
-	templateData["startTime"] = ProwJobStartTime()
-	templateData["kubernetesVersion"] = kubernetesVersion
-	templateData["jobName"] = jobName
 
 	temp, err := template.ParseFiles(eksDRebuildProwJobTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("parsing template file: %v", err)
 	}
 
+	templateData := EksDistroRebuildTemplateValues(*opts)
+	templateData["startTime"] = ProwJobStartTime()
+	templateData["kubernetesVersion"] = kubernetesVersion
+	templateData["jobName"] = jobName
+
 	var renderedTemplateData bytes.Buffer
+
 	err = temp.ExecuteTemplate(&renderedTemplateData, "eks-distro-rebuild.yaml", templateData)
 	if err != nil {
 		return nil, fmt.Errorf("rendering builderBaseProwJob: %v", err)

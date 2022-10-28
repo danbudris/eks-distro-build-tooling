@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/pflag"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ var eksDistroRebuildCustomProwJob = &cobra.Command{
 	Use:   "eks-distro-rebuild",
 	Short: "Rebuild EKS Distro",
 	Long:  "Generate a prow job to re-build all of EKS Distro for the given K8s version",
+	PreRun: preRunEksDistroRebuild,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := eksDistroRebuildProwJob(cmd.Context())
 		if err != nil {
@@ -31,9 +33,6 @@ const (
 func init() {
 	customProwJobCommand.AddCommand(eksDistroRebuildCustomProwJob)
 	eksDistroRebuildCustomProwJob.Flags().StringP(K8sVersionFlag, "v", "", "EKS D Kubernetes version to rebuild")
-	if err := viper.BindPFlags(eksDistroRebuildCustomProwJob.PersistentFlags()); err != nil {
-		log.Fatalf("failed to bind flags: %v", err)
-	}
 
 	requiredFlags := []string{
 		K8sVersionFlag,
@@ -46,6 +45,15 @@ func init() {
 	}
 }
 
+func preRunEksDistroRebuild(cmd *cobra.Command, args []string) {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		err := viper.BindPFlag(flag.Name, flag)
+		if err != nil {
+			log.Fatalf("Error initializing flags: %v", err)
+		}
+	})
+}
+
 func eksDistroRebuildProwJob(ctx context.Context) error {
 	eksDistroRebuildOpts := &prowJobs.EksDistroRebuildProwJobOptions{
 		ProwJobOptions: &prowJobs.ProwJobOptions{},
@@ -53,6 +61,7 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 
 	runtimeImage := viper.GetString(RuntimeImageFlag)
 	k8sVersion := viper.GetString(K8sVersionFlag)
+	fmt.Printf("\n\n K8s Version: %s \n\n", k8sVersion)
 
 	if runtimeImage != "" {
 		eksDistroRebuildOpts.RuntimeImage = runtimeImage
