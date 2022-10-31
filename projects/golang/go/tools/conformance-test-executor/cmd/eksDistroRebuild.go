@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/constants"
+	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/git"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -73,9 +75,22 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 		eksDistroRebuildOpts.ArtifactsBucket = artifactsBucket
 	}
 
-	headSha := "5e5bbfc56809daec14982b258412a589e97f82a8"
-	baseSha := "36f6355201f6c244eec34a7eafb6a5673928900b"
+	oldBaseSha := "5e5bbfc56809daec14982b258412a589e97f82a8"
+	oldHeadSha := "399b4524c88009330f5e721e79095228fc333a04"
 	jobName := fmt.Sprintf("build-%s-postsubmit-custom", k8sVersion)
+
+	fmt.Println("sup")
+	baseSha, headSha, err := git.GetHeadAndBaseHashes(constants.EksDRepoUrl, "main"); if err != nil {
+		log.Fatalf("Failed while cloning: %v", err)
+	}
+
+	fmt.Println("--Old base and head SHA--")
+	fmt.Println(oldBaseSha)
+	fmt.Println(oldHeadSha)
+
+	fmt.Println("--New base and head SHA--")
+	fmt.Println(baseSha)
+	fmt.Println(headSha)
 
 	jobBytes, err := prowJobs.NewEksDistroRebuildProwJob(k8sVersion, jobName, headSha, baseSha, eksDistroRebuildOpts)
 	if err != nil {

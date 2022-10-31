@@ -150,7 +150,7 @@ spec:
   prowjob_defaults:
     tenant_id: GlobalDefaultID
   refs:
-    base_link: https://github.com/aws/eks-distro/compare/{{ .headSha }}...{{ .baseSha }}
+    base_link: https://github.com/aws/eks-distro/compare/{{ .baseSha }}...{{ .headSha }}
     base_ref: main
     base_sha: {{ .baseSha }}
     org: {{ .gitOrg }}
