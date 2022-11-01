@@ -26,7 +26,7 @@ func NewEksDistroRebuildProwJob(kubernetesVersion string, jobName string, baseSh
 	}
 
 	templateData := EksDistroRebuildTemplateValues(*opts)
-	templateData["startTime"] = ProwJobStartTime(time.Now())
+	templateData["startTime"] = ProwJobStartTime(time.Now().UTC())
 	templateData["kubernetesVersion"] = kubernetesVersion
 	templateData["jobName"] = jobName
 	templateData["baseSha"] = baseSha

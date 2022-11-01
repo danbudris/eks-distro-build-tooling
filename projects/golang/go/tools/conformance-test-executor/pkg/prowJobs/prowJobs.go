@@ -52,7 +52,7 @@ func (g *ProwJobCommonOptions) setCommonDefaults() {
 	}
 
 	if g.RuntimeImage == "" {
-		g.RuntimeImage = "public.ecr.aws/eks-distro-build-tooling/builder-base:9242630ce031e03158c65753c07bbfc79985347e.2"
+		g.RuntimeImage = "public.ecr.aws/eks-distro-build-tooling/builder-base:8a2a9d01b95ee8f2bbacbb03d1d55b6c56615411.2"
 	}
 }
 

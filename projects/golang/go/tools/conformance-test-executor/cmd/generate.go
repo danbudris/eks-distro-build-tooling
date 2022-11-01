@@ -14,11 +14,13 @@ var customProwJobCommand = &cobra.Command{
 }
 
 const (
-	JobNameFlag         = "jobName"
+	BranchFlag       = "branch"
+	JobNameFlag      = "jobName"
 	RuntimeImageFlag = "runtimeImage"
 )
 
 func init() {
+	customProwJobCommand.PersistentFlags().String(BranchFlag, "main", "Branch to use as the head for the prow job comparison")
 	customProwJobCommand.PersistentFlags().StringP(RuntimeImageFlag, "r", "", "Runtime image to use as the base of the prow job")
 	customProwJobCommand.PersistentFlags().StringP(JobNameFlag, "n", "", "Name for the executed prow job")
 	if err := viper.BindPFlags(customProwJobCommand.PersistentFlags()); err != nil {

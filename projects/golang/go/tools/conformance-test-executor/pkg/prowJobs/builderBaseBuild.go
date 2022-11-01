@@ -9,6 +9,7 @@ import (
 )
 
 const eksDistroRebuildTemplate = "templates/eks-distro-rebuild-and-test.yaml"
+const eksDistroEcrPublicPushRoleArn = "arn:aws:iam::832188789588:role/ECRPublicPushRole"
 
 type BuilderBaseBuildProwJobOptions struct {
 	*ProwJobCommonOptions

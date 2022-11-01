@@ -7,18 +7,17 @@ metadata:
   creationTimestamp: null
   labels:
     created-by-prow: "true"
-    event-GUID: e2ff0f28-54a2-11ed-9f20-44b1648473e3
     image-build: "true"
     pr-creation: "true"
-    prow.k8s.io/build-id: "1585004146891689984"
+    prow.k8s.io/build-id: {{ .jobId }}
     prow.k8s.io/context: builder-base-tooling-postsubmit
-    prow.k8s.io/id: e46cea28-54a2-11ed-b396-22bcd61f53ac
-    prow.k8s.io/job: builder-base-tooling-postsubmit
+    prow.k8s.io/id: {{ .jobId }}
+    prow.k8s.io/job: builder-base-tooling-postsubmit-custom
     prow.k8s.io/refs.base_ref: main
-    prow.k8s.io/refs.org: aws
-    prow.k8s.io/refs.repo: eks-distro-build-tooling
+    prow.k8s.io/refs.org: {{ .gitOrg }}
+    prow.k8s.io/refs.repo: {{ .gitRepo }}
     prow.k8s.io/type: postsubmit
-  name: 2bddab1e-561c-11ed-af82-0a1b7c86eaa0
+  name: {{ .jobId }}
 spec:
   agent: kubernetes
   cluster: prow-postsubmits-cluster
@@ -56,11 +55,11 @@ spec:
           - name: AL_TAG
             value: "2"
           - name: IMAGE_REPO
-            value: public.ecr.aws/eks-distro-build-tooling
+            value: {{ .imageRepo }}
           - name: ECR_PUBLIC_PUSH_ROLE_ARN
-            value: arn:aws:iam::832188789588:role/ECRPublicPushRole
+            value: {{ .ecrPublicPushRoleArn }}
           - name: AWS_REGION
-            value: us-east-1
+            value: {{ .awsRegion }}
           - name: AWS_SDK_LOAD_CONFIG
             value: "true"
           - name: AWS_ROLE_SESSION_NAME
@@ -69,12 +68,12 @@ spec:
                 fieldPath: metadata.name
           - name: GOPROXY
             value: http://athens-proxy.default.svc.cluster.local
-        image: public.ecr.aws/eks-distro-build-tooling/builder-base:9242630ce031e03158c65753c07bbfc79985347e.2
+        image: {{ .runtimeImage }}
         name: build-container
         resources:
           requests:
-            cpu: "4"
-            memory: 16Gi
+            cpu: {{ .cpuRequest }}
+            memory: {{ .memoryRequest }}
         volumeMounts:
           - mountPath: /secrets/github-secrets
             name: github-auth
@@ -134,7 +133,7 @@ spec:
           - mountPath: /config
             name: builder-base-tag-file
     nodeSelector:
-      arch: AMD64
+      arch: {{ .architecture }}
     serviceAccountName: postsubmits-build-account
     volumes:
       - name: github-auth
@@ -170,14 +169,14 @@ spec:
   prowjob_defaults:
     tenant_id: GlobalDefaultID
   refs:
-    base_link: https://github.com/aws/eks-distro-build-tooling/compare/56732c53184a...7e3154406cdf
+    base_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}/compare/{{ .bashSha }}...{{ .headSha }}
     base_ref: main
-    base_sha: 7e3154406cdf70dbe7b2fd87d5e7a48dd2014b9d
-    org: aws
-    repo: eks-distro-build-tooling
-    repo_link: https://github.com/aws/eks-distro-build-tooling
+    base_sha: {{ .headSha }}
+    org: {{ .gitOrg }}
+    repo: {{ .gitRepo }}
+    repo_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}
   report: true
   type: postsubmit
 status:
-  startTime: "2022-10-27T17:24:11Z"
+  startTime: {{ .startTime }}
   state: triggered

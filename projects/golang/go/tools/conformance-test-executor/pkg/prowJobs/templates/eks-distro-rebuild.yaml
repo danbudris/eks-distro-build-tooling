@@ -45,6 +45,12 @@ spec:
           - |
             trap 'touch /status/done' EXIT && build/lib/buildkit_check.sh && cp -r "${HOME}/.docker" /home/prow/go/src/github.com/aws/eks-distro && make -j2 postsubmit-conformance
         env:
+          - name: SKIP_CHECKSUM_VALIDATION
+            value: "true"
+          - name: HAS_S3_ARTIFACTS
+            value: "false"
+          - name: REBUILD_ALL
+            value: "true"
           - name: TEST_ROLE_ARN
             value: {{ .testRoleArn }}
           - name: ARTIFACT_BUCKET
@@ -152,7 +158,7 @@ spec:
   refs:
     base_link: https://github.com/aws/eks-distro/compare/{{ .baseSha }}...{{ .headSha }}
     base_ref: main
-    base_sha: {{ .baseSha }}
+    base_sha: {{ .headSha }}
     org: {{ .gitOrg }}
     repo: {{ .gitRepo }}
     repo_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}

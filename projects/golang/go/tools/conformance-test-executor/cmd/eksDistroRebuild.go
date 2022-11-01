@@ -6,6 +6,7 @@ import (
 	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/constants"
 	"github.com/aws/eks-distro-build-tooling/golang/conformance-test-executor/pkg/git"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -66,6 +67,7 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 	artifactsBucket := viper.GetString(ArtifactsBucketFlag)
 	runtimeImage := viper.GetString(RuntimeImageFlag)
 	k8sVersion := viper.GetString(K8sVersionFlag)
+	branchHead := viper.GetString(BranchFlag)
 
 	if runtimeImage != "" {
 		eksDistroRebuildOpts.RuntimeImage = runtimeImage
@@ -75,27 +77,21 @@ func eksDistroRebuildProwJob(ctx context.Context) error {
 		eksDistroRebuildOpts.ArtifactsBucket = artifactsBucket
 	}
 
-	oldBaseSha := "5e5bbfc56809daec14982b258412a589e97f82a8"
-	oldHeadSha := "399b4524c88009330f5e721e79095228fc333a04"
 	jobName := fmt.Sprintf("build-%s-postsubmit-custom", k8sVersion)
 
-	fmt.Println("sup")
-	baseSha, headSha, err := git.GetHeadAndBaseHashes(constants.EksDRepoUrl, "main"); if err != nil {
-		log.Fatalf("Failed while cloning: %v", err)
+	baseSha, headSha, err := git.GetHeadAndBaseHashes(constants.EksDRepoUrl, branchHead); if err != nil {
+		return fmt.Errorf("failed while cloning: %v", err)
 	}
-
-	fmt.Println("--Old base and head SHA--")
-	fmt.Println(oldBaseSha)
-	fmt.Println(oldHeadSha)
-
-	fmt.Println("--New base and head SHA--")
-	fmt.Println(baseSha)
-	fmt.Println(headSha)
 
 	jobBytes, err := prowJobs.NewEksDistroRebuildProwJob(k8sVersion, jobName, headSha, baseSha, eksDistroRebuildOpts)
 	if err != nil {
 		return fmt.Errorf("building EKS Distro Rebuild Prow Job: %v", err)
 	}
-	fmt.Println(string(jobBytes))
+
+	err = os.WriteFile(fmt.Sprintf("%s.yaml", jobName), jobBytes, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %v", err)
+	}
+
 	return nil
 }
