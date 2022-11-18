@@ -1,0 +1,182 @@
+apiVersion: prow.k8s.io/v1
+kind: ProwJob
+metadata:
+  annotations:
+    prow.k8s.io/context: builder-base-tooling-postsubmit
+    prow.k8s.io/job: builder-base-tooling-postsubmit
+  creationTimestamp: null
+  labels:
+    created-by-prow: "true"
+    image-build: "true"
+    pr-creation: "true"
+    prow.k8s.io/build-id: {{ .jobId }}
+    prow.k8s.io/context: builder-base-tooling-postsubmit
+    prow.k8s.io/id: {{ .jobId }}
+    prow.k8s.io/job: builder-base-tooling-postsubmit-custom
+    prow.k8s.io/refs.base_ref: main
+    prow.k8s.io/refs.org: {{ .gitOrg }}
+    prow.k8s.io/refs.repo: {{ .gitRepo }}
+    prow.k8s.io/type: postsubmit
+  name: {{ .jobId }}
+spec:
+  agent: kubernetes
+  cluster: prow-postsubmits-cluster
+  context: builder-base-tooling-postsubmit
+  decoration_config:
+    gcs_configuration:
+      bucket: s3://prowdataclusterstack-316434458-prowbucket7c73355c-1n9f9v93wpjcm
+      path_strategy: explicit
+    s3_credentials_secret: s3-credentials
+    utility_images:
+      clonerefs: public.ecr.aws/eks-distro-build-tooling/prow-clonerefs:v20220727-a57f8abeb4
+      entrypoint: public.ecr.aws/eks-distro-build-tooling/prow-entrypoint:v20220727-a57f8abeb4
+      initupload: public.ecr.aws/eks-distro-build-tooling/prow-initupload:v20220727-a57f8abeb4
+      sidecar: public.ecr.aws/eks-distro-build-tooling/prow-sidecar:v20220727-a57f8abeb4
+  error_on_eviction: true
+  extra_refs:
+    - base_ref: main
+      org: eks-distro-pr-bot
+      repo: eks-distro-prow-jobs
+    - base_ref: main
+      org: eks-distro-pr-bot
+      repo: eks-anywhere-prow-jobs
+  job: builder-base-tooling-postsubmit
+  max_concurrency: 10
+  namespace: default
+  pod_spec:
+    automountServiceAccountToken: false
+    containers:
+      - command:
+          - bash
+          - -c
+          - |
+            trap 'touch /status/done' EXIT && scripts/buildkit_check.sh && source scripts/setup_public_ecr_push.sh && make release -C builder-base IMAGE_TAG=$PULL_BASE_SHA.${AL_TAG}
+        env:
+          - name: AL_TAG
+            value: "2"
+          - name: IMAGE_REPO
+            value: {{ .imageRepo }}
+          - name: ECR_PUBLIC_PUSH_ROLE_ARN
+            value: {{ .ecrPublicPushRoleArn }}
+          - name: AWS_REGION
+            value: {{ .awsRegion }}
+          - name: AWS_SDK_LOAD_CONFIG
+            value: "true"
+          - name: AWS_ROLE_SESSION_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: GOPROXY
+            value: http://athens-proxy.default.svc.cluster.local
+        image: {{ .runtimeImage }}
+        name: build-container
+        resources:
+          requests:
+            cpu: {{ .cpuRequest }}
+            memory: {{ .memoryRequest }}
+        volumeMounts:
+          - mountPath: /secrets/github-secrets
+            name: github-auth
+            readOnly: true
+          - mountPath: /secrets/ssh-secrets
+            name: ssh-auth
+            readOnly: true
+          - mountPath: /root/.docker/config.json
+            name: docker-registry-config
+            subPath: config.json
+          - mountPath: /run/buildkit
+            name: run-buildkit
+          - mountPath: /script
+            name: entrypoint
+          - mountPath: /status
+            name: status
+          - mountPath: /config
+            name: builder-base-tag-file
+      - args:
+          - /script/entrypoint.sh
+        command:
+          - sh
+        env:
+          - name: AWS_SDK_LOAD_CONFIG
+            value: "true"
+          - name: AWS_ROLE_SESSION_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: GOPROXY
+            value: http://athens-proxy.default.svc.cluster.local
+        image: moby/buildkit:v0.10.1-rootless
+        name: buildkitd
+        resources:
+          requests:
+            cpu: 1024m
+            memory: 2Gi
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
+        volumeMounts:
+          - mountPath: /secrets/github-secrets
+            name: github-auth
+            readOnly: true
+          - mountPath: /secrets/ssh-secrets
+            name: ssh-auth
+            readOnly: true
+          - mountPath: /root/.docker/config.json
+            name: docker-registry-config
+            subPath: config.json
+          - mountPath: /run/buildkit
+            name: run-buildkit
+          - mountPath: /script
+            name: entrypoint
+          - mountPath: /status
+            name: status
+          - mountPath: /config
+            name: builder-base-tag-file
+    nodeSelector:
+      arch: {{ .architecture }}
+    serviceAccountName: postsubmits-build-account
+    volumes:
+      - name: github-auth
+        secret:
+          defaultMode: 256
+          secretName: pr-bot-github-token
+      - name: ssh-auth
+        secret:
+          defaultMode: 256
+          secretName: pr-bot-ssh-secret
+      - configMap:
+          items:
+            - key: docker-ecr-config.json
+              path: config.json
+          name: build-setup
+        name: docker-registry-config
+      - configMap:
+          items:
+            - key: buildkitd-entrypoint.sh
+              path: entrypoint.sh
+          name: buildkitd-entrypoint
+        name: entrypoint
+      - emptyDir: {}
+        name: run-buildkit
+      - emptyDir: {}
+        name: status
+      - configMap:
+          items:
+            - key: BUILDER_BASE_TAG_FILE
+              path: BUILDER_BASE_TAG_FILE
+          name: builder-base-tag-file
+        name: builder-base-tag-file
+  prowjob_defaults:
+    tenant_id: GlobalDefaultID
+  refs:
+    base_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}/compare/{{ .bashSha }}...{{ .headSha }}
+    base_ref: main
+    base_sha: {{ .headSha }}
+    org: {{ .gitOrg }}
+    repo: {{ .gitRepo }}
+    repo_link: https://github.com/{{ .gitOrg }}/{{ .gitRepo }}
+  report: true
+  type: postsubmit
+status:
+  startTime: {{ .startTime }}
+  state: triggered

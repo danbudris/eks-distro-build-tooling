@@ -3,7 +3,7 @@ package issueManager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -59,7 +59,7 @@ func (p *IssueManager) CreateIssue(ctx context.Context, opts *CreateIssueOpts) (
 	issue, resp, err = p.client.Issues.Create(ctx, p.sourceOwner, p.sourceRepo, i)
 	if resp != nil {
 		if resp.StatusCode == github.SecondaryRateLimitStatusCode {
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return nil, fmt.Errorf("reading Github response body: %v", err)
 			}
@@ -70,7 +70,7 @@ func (p *IssueManager) CreateIssue(ctx context.Context, opts *CreateIssueOpts) (
 		}
 
 		if resp.StatusCode == github.ResourceGoneStatusCode {
-			b, err := ioutil.ReadAll(resp.Body)
+			b, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return nil, fmt.Errorf("reading Github response body: %v", err)
 			}
